@@ -37,7 +37,7 @@ def recieve_data():
     #set up socket to communicate with ultrasound machine
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind(('192.168.1.3', 19001))
+    s.bind(('192.168.1.151', 19001))
     s.listen(1)
     conn, addr = s.accept()
     print(addr)
@@ -286,6 +286,12 @@ def main():
                     x, y = tracked_contour_two[i].ravel()
                     cv.circle(frame_color, (x, y), 3, (255, 0, 0), -1)
                 mean_two = tuple(np.mean(tracked_contour_two, axis = 0))
+
+                distance = [mean_two[0] - mean_one[0], mean_two[1] - mean_one[1]]
+                muscle_thickness = np.linalg.norm(distance)
+                file = open("thickness.txt", "w") 
+                file.write(str(muscle_thickness))
+                file.close()
 
                 cv.line(frame_color, mean_one, mean_two, (255, 0, 255), 3)
                 
