@@ -18,27 +18,31 @@ class DrawingState(Enum):
     DRAWING_SECOND = 4
     DONE_SECOND = 5
 
-#imageMatrix is the recieved image from the ultrasound
-imageMatrix = np.zeros((326, 241), dtype = np.uint8)
-#boolean for if ultrasound data has been recieved yet
-got_data = False
-
-drawing = DrawingState.STARTING_FIRST
-old_frame_filtered = np.zeros((244,301), np.uint8)
-clicked_pts_set_one = []
-clicked_pts_set_two = []
+IP = '10.0.0.95'
 
 class SocketPython:
+
+    def __init__(self):
+        #imageMatrix is the recieved image from the ultrasound
+        self.imageMatrix = np.zeros((326, 241), dtype = np.uint8)
+        #boolean for if ultrasound data has been recieved yet
+        self.got_data = False
+
+        self.drawing = DrawingState.STARTING_FIRST
+        self.old_frame_filtered = np.zeros((244,301), np.uint8)
+        self.clicked_pts_set_one = []
+        self.clicked_pts_set_two = []
+        #create a thread to run recieve_data and start it
+        t1 = threading.Thread(target=self.recieve_data) 
+        t1.start()
+
     """This function recieves the image from the ultrasound machine and writes them to imageMatrix"""
     def recieve_data(self):
-        #define global variables so we can modify them in this function
-        global imageMatrix
-        global got_data
-
+        #TODO: PUT LOCK ON IMAGE MATRIX?
         #set up socket to communicate with ultrasound machine
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind(('192.168.1.4', 19001))
+        s.bind((IP, 19001))
         s.listen(1)
         conn, addr = s.accept()
         print(addr)
@@ -52,7 +56,7 @@ class SocketPython:
         header = unpack('IIIIIIIIIQIIIIIIIIIIIII', data)
         numberOfLines = header[13]
         numberOfPoints = header[14]
-        imageMatrix = np.zeros((numberOfPoints, numberOfLines), dtype = np.uint8)
+        self.imageMatrix = np.zeros((numberOfPoints, numberOfLines), dtype = np.uint8)
         recieved = 0
         buffer = b''
         while (recieved != header[8]): 
@@ -61,9 +65,10 @@ class SocketPython:
         nparr = np.frombuffer(buffer, np.uint8)
         for j in range(numberOfLines):
             for i in range(numberOfPoints):
-                imageMatrix[i][j] = nparr[i+ j *(numberOfPoints + 8)]
+                self.imageMatrix[i][j] = nparr[i+ j *(numberOfPoints + 8)]
         iteration += 1
-        got_data = True
+        self.got_data = True
+
         #rest of iterations
         while 1:
             #recieve header data 
@@ -92,7 +97,7 @@ class SocketPython:
             if iteration % 10 == 0:
                 for j in range(numberOfLines):
                     for i in range(numberOfPoints):
-                        imageMatrix[i][j] = nparr[i+ j *(numberOfPoints + 8)]
+                        self.imageMatrix[i][j] = nparr[i+ j *(numberOfPoints + 8)]
             #if we have not recieved an image, break
             if not data:
                 break
@@ -103,19 +108,18 @@ class SocketPython:
             
     def draw_polygon(self,event, x, y, flags, param):
 
-        global clicked_pts_set_one, clicked_pts_set_two, drawing
         if event == cv.EVENT_LBUTTONDOWN:
-            if drawing == DrawingState.STARTING_FIRST or drawing == DrawingState.DRAWING_FIRST:
-                drawing = DrawingState.DRAWING_FIRST
-                clicked_pts_set_one.append((x,y))
-                if(len(clicked_pts_set_one) >= 10):
-                    drawing = DrawingState.STARTING_SECOND
+            if self.drawing == DrawingState.STARTING_FIRST or self.drawing == DrawingState.DRAWING_FIRST:
+                self.drawing = DrawingState.DRAWING_FIRST
+                self.clicked_pts_set_one.append((x,y))
+                if(len(self.clicked_pts_set_one) >= 10):
+                    self.drawing = DrawingState.STARTING_SECOND
                     print("START DRAWING SECOND LINE NOW!")
-            elif drawing == DrawingState.STARTING_SECOND or drawing == DrawingState.DRAWING_SECOND:
-                drawing = DrawingState.DRAWING_SECOND
-                clicked_pts_set_two.append((x,y))
-                if(len(clicked_pts_set_two) >= 10):
-                    drawing = DrawingState.DONE_SECOND
+            elif self.drawing == DrawingState.STARTING_SECOND or self.drawing == DrawingState.DRAWING_SECOND:
+                self.drawing = DrawingState.DRAWING_SECOND
+                self.clicked_pts_set_two.append((x,y))
+                if(len(self.clicked_pts_set_two) >= 10):
+                    self.drawing = DrawingState.DONE_SECOND
                 
     def extract_contour_pts(self, img):
         """Extract points from largest contour in PGM image.
@@ -132,20 +136,8 @@ class SocketPython:
         Returns:
             numpy.ndarray of contour points
         """
-        # convert image to grayscale if it is color
-        # if len(img.shape) > 2:
-        #     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        # threshold_level = 100
-        
-        # # binarize image
-        # _, binarized = cv2.threshold(img, threshold_level, 255, cv2.THRESH_BINARY)
-        # cv2.imshow('image', binarized)
-        # cv2.waitKey(0)
         frame_HSV = cv.cvtColor(img, cv.COLOR_BGR2HSV)
         frame_threshold = cv.inRange(frame_HSV, (0, 255, 255), (20, 255, 255))
-        # flip image (need a white object on black background)
-        # flipped = cv2.bitwise_not(binarized)
-        # print("flipped is ",flipped)
         contours, _ = cv2.findContours(frame_threshold, cv2.RETR_TREE,
                                        cv2.CHAIN_APPROX_SIMPLE)
         # convert largest contour to tracking-compatible numpy array
@@ -159,11 +151,6 @@ class SocketPython:
         return np_points
 
     def main(self, pipe):
-        global old_frame_filtered, drawing, clicked_pts_set_one, clicked_pts_set_two
-        #create a thread to run recieve_data and start it
-        t1 = threading.Thread(target=self.recieve_data) 
-        t1.start()
-
         #create opencv window to display image
         cv.namedWindow('image')
         cv.setMouseCallback('image',self.draw_polygon)
@@ -193,49 +180,38 @@ class SocketPython:
         points_set_one = None
         points_set_two = None
         while 1:
-            if got_data:
-                # print("got data!")
+            if self.got_data:
                 #resize imageMatrix so it has a larger width than height
-                resized = cv.resize(imageMatrix, (int(1.25*imageMatrix.shape[1]), (int(.75*imageMatrix.shape[0]))), interpolation 
+                resized = cv.resize(self.imageMatrix, (int(1.25*self.imageMatrix.shape[1]), (int(.75*self.imageMatrix.shape[0]))), interpolation 
                     = cv.INTER_AREA).copy()
-                if drawing != DrawingState.DONE_SECOND:
-                    # print('loop again')
+                if self.drawing != DrawingState.DONE_SECOND:
                     old_frame = resized.copy()
-                    # old_frame_filtered = image_filter(old_frame, run_params)
                     old_frame_color = cv2.cvtColor(old_frame,
                                                    cv2.COLOR_GRAY2RGB).copy()
                     # visualize 
                     
                     # Using cv2.polylines() method 
                     # Draw a Green polygon with  
-                    # thickness of 1 px 
-                    contour_image = cv2.polylines(old_frame_color, [np.array(clicked_pts_set_one).reshape((-1, 1, 2)), np.array(clicked_pts_set_two).reshape((-1, 1, 2))],  
+                    contour_image = cv2.polylines(old_frame_color, [np.array(self.clicked_pts_set_one).reshape((-1, 1, 2)), np.array(self.clicked_pts_set_two).reshape((-1, 1, 2))],  
                                           isClosed, color,  
                                           thickness).copy()
                     cv.imshow('image', contour_image)
-                    # else:
-                    #     cv.imshow('image', old_frame_color)
 
                     key = cv.waitKey(1)
 
-                elif drawing == DrawingState.DONE_SECOND and points_set_one is None and points_set_two is None:
+                elif self.drawing == DrawingState.DONE_SECOND and points_set_one is None and points_set_two is None:
                     old_frame = resized.copy()
                     old_frame_color = cv2.cvtColor(old_frame,
                                                    cv2.COLOR_GRAY2RGB).copy()
-                    # print("clicked pts set one", clicked_pts_set_one)
-                    contour_image = cv2.polylines(old_frame_color.copy(), [np.array(clicked_pts_set_one).reshape((-1, 1, 2))],  
+                    contour_image = cv2.polylines(old_frame_color.copy(), [np.array(self.clicked_pts_set_one).reshape((-1, 1, 2))],  
                                               isClosed, color,
                                               thickness).copy()
                     points_set_one = self.extract_contour_pts(contour_image)
-                    # print("points set one", points_set_one)
 
-                    contour_image = cv2.polylines(old_frame_color.copy(), [np.array(clicked_pts_set_two).reshape((-1, 1, 2))],  
+                    contour_image = cv2.polylines(old_frame_color.copy(), [np.array(self.clicked_pts_set_two).reshape((-1, 1, 2))],  
                                               isClosed, color,
                                               thickness).copy()
-                    # print("clicked_pts_set_two", clicked_pts_set_two)
                     points_set_two = self.extract_contour_pts(contour_image)
-                    # print("points_set_two", points_set_two)
-
 
                 # track and display specified points through images
                 # if it's the first image, we will just set the old_frame varable
@@ -244,7 +220,7 @@ class SocketPython:
                     old_frame = resized.copy()
 
                     # apply filters to frame
-                    old_frame_filtered = image_filter(old_frame, run_params)
+                    self.old_frame_filtered = image_filter(old_frame, run_params)
 
                     first_loop = False
 
@@ -257,11 +233,11 @@ class SocketPython:
 
                     #perform optical flow tracking to track where points went between image frames
                     tracked_contour_one, _, _ = cv.calcOpticalFlowPyrLK(
-                        old_frame_filtered, frame_filtered, points_set_one, None,
+                        self.old_frame_filtered, frame_filtered, points_set_one, None,
                         **lk_params)
 
                     tracked_contour_two, _, _ = cv.calcOpticalFlowPyrLK(
-                        old_frame_filtered, frame_filtered, points_set_two, None,
+                        self.old_frame_filtered, frame_filtered, points_set_two, None,
                         **lk_params)
 
                     tracked_contour_one = tracked_contour_one.reshape((-1, 2))
@@ -269,7 +245,7 @@ class SocketPython:
 
 
                     # update for next iteration
-                    old_frame_filtered = frame_filtered.copy()
+                    self.old_frame_filtered = frame_filtered.copy()
                     points_set_one = tracked_contour_one.copy()
                     points_set_two = tracked_contour_two.copy()
 
@@ -290,12 +266,11 @@ class SocketPython:
 
                     distance = [mean_two[0] - mean_one[0], mean_two[1] - mean_one[1]]
                     muscle_thickness = np.linalg.norm(distance)
-                    # file = open("thickness.txt", "w") 
-                    # file.write(str(muscle_thickness))
-                    # file.close()
+
+                    #pipe data to graphing program
                     pipe.send(str(muscle_thickness))
 
-
+                    #draw line representing thickness
                     cv.line(frame_color, mean_one, mean_two, (255, 0, 255), 3)
                     
                     cv.imshow('image', frame_color)
