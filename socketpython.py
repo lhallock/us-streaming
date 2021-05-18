@@ -268,7 +268,7 @@ class SocketPython:
                     muscle_thickness = np.linalg.norm(distance)
 
                     #pipe data to graphing program
-                    pipe.send(str(muscle_thickness))
+                    pipe.send(muscle_thickness)
 
                     #draw line representing thickness
                     cv.line(frame_color, mean_one, mean_two, (255, 0, 255), 3)
