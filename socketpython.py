@@ -5,6 +5,8 @@ from struct import *
 import time
 import threading 
 from enum import Enum
+import os
+from datetime import datetime
 
 from multisensorimport.tracking import supporters_utils
 from multisensorimport.tracking.image_proc_utils import *
@@ -19,6 +21,8 @@ class DrawingState(Enum):
     DONE_SECOND = 5
 
 IP = '10.0.0.95'
+IMAGE_DIRECTORY_RAW = 'images_raw'
+IMAGE_DIRECTORY_FILTERED = 'images_filtered'
 
 class SocketPython:
 
@@ -179,6 +183,7 @@ class SocketPython:
 
         points_set_one = None
         points_set_two = None
+        counter = 0
         while 1:
             if self.got_data:
                 #resize imageMatrix so it has a larger width than height
@@ -267,15 +272,23 @@ class SocketPython:
                     distance = [mean_two[0] - mean_one[0], mean_two[1] - mean_one[1]]
                     muscle_thickness = np.linalg.norm(distance)
 
-                    #pipe data to graphing program
-                    pipe.send(muscle_thickness)
-
                     #draw line representing thickness
                     cv.line(frame_color, mean_one, mean_two, (255, 0, 255), 3)
+
+                    #pipe data to graphing program, and save image
+                    pipe.send(muscle_thickness)
+
+                    if counter == 50:
+                        now = datetime.now().strftime("%H:%M:%S:%f")
+                        print(os.path.join(os.getcwd(), IMAGE_DIRECTORY_RAW, now) + ".jpg")
+                        cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_RAW, now) + ".jpg", resized)
+                        cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_FILTERED, now) + ".jpg", frame_color)
+                        counter = 0
                     
                     cv.imshow('image', frame_color)
 
                     key = cv.waitKey(1)
+                    counter += 1
 
         if viz:
             cv.destroyAllWindows()
