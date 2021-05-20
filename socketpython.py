@@ -6,7 +6,7 @@ import time
 import threading 
 from enum import Enum
 import os
-from datetime import datetime
+import time
 
 from multisensorimport.tracking import supporters_utils
 from multisensorimport.tracking.image_proc_utils import *
@@ -275,14 +275,14 @@ class SocketPython:
                     #draw line representing thickness
                     cv.line(frame_color, mean_one, mean_two, (255, 0, 255), 3)
 
+                    now = time.time()
+
                     #pipe data to graphing program, and save image
-                    pipe.send(muscle_thickness)
+                    pipe.send((now, muscle_thickness))
 
                     if counter == 50:
-                        now = datetime.now().strftime("%H:%M:%S:%f")
-                        print(os.path.join(os.getcwd(), IMAGE_DIRECTORY_RAW, now) + ".jpg")
-                        cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_RAW, now) + ".jpg", resized)
-                        cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_FILTERED, now) + ".jpg", frame_color)
+                        cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_RAW, str(now)) + ".jpg", resized)
+                        cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_FILTERED, str(now)) + ".jpg", frame_color)
                         counter = 0
                     
                     cv.imshow('image', frame_color)
