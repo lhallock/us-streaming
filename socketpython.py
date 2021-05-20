@@ -278,7 +278,8 @@ class SocketPython:
                     now = time.time()
 
                     #pipe data to graphing program, and save image
-                    pipe.send((now, muscle_thickness))
+                    # pipe.send((now, muscle_thickness))
+                    pipe.send(muscle_thickness)
 
                     if counter == 50:
                         cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_RAW, str(now)) + ".jpg", resized)
