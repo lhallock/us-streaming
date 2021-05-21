@@ -3,9 +3,9 @@ from socketpython import SocketPython
 import sys
 sys.path.append('../')
 
-from amg_emg_force_control2 import *
-from amg_emg_force_control2.grapher_game.game.main import GraphingMain
-FILENAME= "../amg_emg_force_control2/grapher_game/test_scripts/test_and_ultrasound.txt"
+from amg_emg_force_control import *
+from amg_emg_force_control.grapher_game.game.main import GraphingMain
+FILENAME= "../amg_emg_force_control/grapher_game/test_scripts/test_and_ultrasound.txt"
 
 if __name__ == '__main__':
     p_out, p_in = Pipe()

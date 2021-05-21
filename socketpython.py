@@ -20,7 +20,7 @@ class DrawingState(Enum):
     DRAWING_SECOND = 4
     DONE_SECOND = 5
 
-IP = '10.0.0.95'
+IP = '172.31.1.153'
 IMAGE_DIRECTORY_RAW = 'images_raw'
 IMAGE_DIRECTORY_FILTERED = 'images_filtered'
 
@@ -98,10 +98,10 @@ class SocketPython:
             nparr = np.frombuffer(buffer, np.uint8)
 
             #fill in imageMatrix based on recieved data
-            if iteration % 10 == 0:
-                for j in range(numberOfLines):
-                    for i in range(numberOfPoints):
-                        self.imageMatrix[i][j] = nparr[i+ j *(numberOfPoints + 8)]
+            # if iteration % 2 == 0:
+            for j in range(numberOfLines):
+                for i in range(numberOfPoints):
+                    self.imageMatrix[i][j] = nparr[i+ j *(numberOfPoints + 8)]
             #if we have not recieved an image, break
             if not data:
                 break
@@ -118,7 +118,7 @@ class SocketPython:
                 self.clicked_pts_set_one.append((x,y))
                 if(len(self.clicked_pts_set_one) >= 10):
                     self.drawing = DrawingState.STARTING_SECOND
-                    print("START DRAWING SECOND LINE NOW!")
+                    print("START DRAWING SECOND LINE NOW!", flush=True)
             elif self.drawing == DrawingState.STARTING_SECOND or self.drawing == DrawingState.DRAWING_SECOND:
                 self.drawing = DrawingState.DRAWING_SECOND
                 self.clicked_pts_set_two.append((x,y))
@@ -261,13 +261,13 @@ class SocketPython:
                     # draw the tracked contour
                     for i in range(len(tracked_contour_one)):
                         x, y = tracked_contour_one[i].ravel()
-                        cv.circle(frame_color, (x, y), 3, (0, 0, 255), -1)
-                    mean_one = tuple(np.mean(tracked_contour_one, axis = 0))
+                        cv.circle(frame_color, (int(x), int(y)), 3, (0, 0, 255), -1)
+                    mean_one = tuple(np.mean(tracked_contour_one, axis = 0, dtype=np.int))
 
                     for i in range(len(tracked_contour_two)):
                         x, y = tracked_contour_two[i].ravel()
-                        cv.circle(frame_color, (x, y), 3, (255, 0, 0), -1)
-                    mean_two = tuple(np.mean(tracked_contour_two, axis = 0))
+                        cv.circle(frame_color, (int(x), int(y)), 3, (255, 0, 0), -1)
+                    mean_two = tuple(np.mean(tracked_contour_two, axis = 0, dtype = np.int))
 
                     distance = [mean_two[0] - mean_one[0], mean_two[1] - mean_one[1]]
                     muscle_thickness = np.linalg.norm(distance)
@@ -281,7 +281,7 @@ class SocketPython:
                     # pipe.send((now, muscle_thickness))
                     pipe.send(muscle_thickness)
 
-                    if counter == 50:
+                    if counter == 5:
                         cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_RAW, str(now)) + ".jpg", resized)
                         cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_FILTERED, str(now)) + ".jpg", frame_color)
                         counter = 0
