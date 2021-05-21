@@ -23,6 +23,7 @@ class DrawingState(Enum):
 IP = '172.31.1.153'
 IMAGE_DIRECTORY_RAW = 'images_raw'
 IMAGE_DIRECTORY_FILTERED = 'images_filtered'
+THICKNESS_FILE = 'muscle_thickness_vertical.txt'
 
 class SocketPython:
 
@@ -155,6 +156,7 @@ class SocketPython:
         return np_points
 
     def main(self, pipe):
+
         #create opencv window to display image
         cv.namedWindow('image')
         cv.setMouseCallback('image',self.draw_polygon)
@@ -184,6 +186,7 @@ class SocketPython:
         points_set_one = None
         points_set_two = None
         counter = 0
+
         while 1:
             if self.got_data:
                 #resize imageMatrix so it has a larger width than height
@@ -284,15 +287,19 @@ class SocketPython:
                     cv.line(frame_color, (leftmost_x, topmost_y), (rightmost_x, topmost_y), (0, 255, 0), 3)
                     cv.line(frame_color, (leftmost_x, bottommost_y), (rightmost_x, bottommost_y), (0, 255, 0), 3)
                     vertical_distance = topmost_y - bottommost_y
+
                     now = time.time()
+                    str_now = str(now)
 
                     #pipe data to graphing program, and save image
                     # pipe.send((now, muscle_thickness))
                     pipe.send(vertical_distance)
 
                     if counter == 5:
-                        cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_RAW, str(now)) + ".jpg", resized)
-                        cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_FILTERED, str(now)) + ".jpg", frame_color)
+                        cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_RAW, str_now) + ".jpg", resized)
+                        cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_FILTERED, str_now) + ".jpg", frame_color)
+                        with open(THICKNESS_FILE, "a") as thickness_file:
+                            thickness_file.write(str_now + ": " + str(vertical_distance) + "\n")
                         counter = 0
                     
                     cv.imshow('image', frame_color)
@@ -302,7 +309,6 @@ class SocketPython:
 
         if viz:
             cv.destroyAllWindows()
-
 """This is the main method. It creates a thread to run recieve_data, and 
 then continually loops and displays the recieved image. I am also working on adding LK tracking."""
 # if __name__ == "__main__":
