@@ -157,6 +157,8 @@ class SocketPython:
 
     def main(self, pipe):
 
+        with open(THICKNESS_FILE, "w") as thickness_file:
+            thickness_file.write("Muscle thickness data\n")
         #create opencv window to display image
         cv.namedWindow('image')
         cv.setMouseCallback('image',self.draw_polygon)
