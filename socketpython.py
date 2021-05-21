@@ -269,17 +269,26 @@ class SocketPython:
                         cv.circle(frame_color, (int(x), int(y)), 3, (255, 0, 0), -1)
                     mean_two = tuple(np.mean(tracked_contour_two, axis = 0, dtype = np.int))
 
-                    distance = [mean_two[0] - mean_one[0], mean_two[1] - mean_one[1]]
-                    muscle_thickness = np.linalg.norm(distance)
+                    # distance = [mean_two[0] - mean_one[0], mean_two[1] - mean_one[1]]
+                    # vertical_distance = distance[1]
+                    # muscle_thickness = np.linalg.norm(distance)
 
                     #draw line representing thickness
                     cv.line(frame_color, mean_one, mean_two, (255, 0, 255), 3)
-
+                    leftmost_x = min(mean_one[0], mean_two[0])
+                    rightmost_x = max(mean_one[0], mean_two[0])
+                    topmost_y = max(mean_one[1], mean_two[1])
+                    bottommost_y = min(mean_one[1], mean_two[1])
+                    leftmost_x -= 10
+                    rightmost_x += 10
+                    cv.line(frame_color, (leftmost_x, topmost_y), (rightmost_x, topmost_y), (0, 255, 0), 3)
+                    cv.line(frame_color, (leftmost_x, bottommost_y), (rightmost_x, bottommost_y), (0, 255, 0), 3)
+                    vertical_distance = topmost_y - bottommost_y
                     now = time.time()
 
                     #pipe data to graphing program, and save image
                     # pipe.send((now, muscle_thickness))
-                    pipe.send(muscle_thickness)
+                    pipe.send(vertical_distance)
 
                     if counter == 5:
                         cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_RAW, str(now)) + ".jpg", resized)
