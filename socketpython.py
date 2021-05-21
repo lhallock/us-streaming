@@ -99,7 +99,7 @@ class SocketPython:
             nparr = np.frombuffer(buffer, np.uint8)
 
             #fill in imageMatrix based on recieved data
-            # if iteration % 2 == 0:
+            # if iteration % 10 == 0:
             for j in range(numberOfLines):
                 for i in range(numberOfPoints):
                     self.imageMatrix[i][j] = nparr[i+ j *(numberOfPoints + 8)]
@@ -147,6 +147,7 @@ class SocketPython:
                                        cv2.CHAIN_APPROX_SIMPLE)
         # convert largest contour to tracking-compatible numpy array
         points = []
+
         for j in range(len(contours)):
             for i in range(len(contours[j])):
                 points.append(np.array(contours[j][i], dtype=np.float32))
@@ -155,7 +156,7 @@ class SocketPython:
 
         return np_points
 
-    def main(self, pipe):
+    def main(self, mp_value):
 
         with open(THICKNESS_FILE, "w") as thickness_file:
             thickness_file.write("Muscle thickness data\n")
@@ -189,6 +190,7 @@ class SocketPython:
         points_set_two = None
         counter = 0
 
+        EPSILON = 256
         while 1:
             if self.got_data:
                 #resize imageMatrix so it has a larger width than height
@@ -213,6 +215,25 @@ class SocketPython:
                     old_frame = resized.copy()
                     old_frame_color = cv2.cvtColor(old_frame,
                                                    cv2.COLOR_GRAY2RGB).copy()
+
+                    # #get box with clicked_pts_set_one and clicked_pts_set_two
+                    # set_one_x_min = min(self.clicked_pts_set_one[0][0], self.clicked_pts_set_one[1][0], self.clicked_pts_set_one[2][0], self.clicked_pts_set_one[3][0])
+                    # set_one_x_max = max(self.clicked_pts_set_one[0][0], self.clicked_pts_set_one[1][0], self.clicked_pts_set_one[2][0], self.clicked_pts_set_one[3][0])
+                    # set_one_y_min = min(self.clicked_pts_set_one[0][1], self.clicked_pts_set_one[1][1], self.clicked_pts_set_one[2][1], self.clicked_pts_set_one[3][1])
+                    # set_one_y_max = max(self.clicked_pts_set_one[0][1], self.clicked_pts_set_one[1][1], self.clicked_pts_set_one[2][1], self.clicked_pts_set_one[3][1])
+
+                    # set_two_x_min = min(self.clicked_pts_set_two[0][0], self.clicked_pts_set_two[1][0], self.clicked_pts_set_two[2][0], self.clicked_pts_set_two[3][0])
+                    # set_two_x_max = max(self.clicked_pts_set_two[0][0], self.clicked_pts_set_two[1][0], self.clicked_pts_set_two[2][0], self.clicked_pts_set_two[3][0])
+                    # set_two_y_min = min(self.clicked_pts_set_two[0][1], self.clicked_pts_set_two[1][1], self.clicked_pts_set_two[2][1], self.clicked_pts_set_two[3][1])
+                    # set_two_y_max = max(self.clicked_pts_set_two[0][1], self.clicked_pts_set_two[1][1], self.clicked_pts_set_two[2][1], self.clicked_pts_set_two[3][1])
+
+                    # mask_one = np.zeros(old_frame.shape, dtype="uint8")
+                    # mask_one[set_one_y_min:set_one_y_max, set_one_x_min: set_one_x_max] = 1
+                    # points_set_one = cv2.goodFeaturesToTrack(old_frame,25,0.01,10, mask=mask_one)
+
+                    # mask_two = np.zeros(old_frame.shape, dtype="uint8")
+                    # mask_two[set_two_y_min:set_two_y_max, set_two_x_min: set_two_x_max] = 1
+                    # points_set_two = cv2.goodFeaturesToTrack(old_frame,25,0.01,10, mask=mask_two)
                     contour_image = cv2.polylines(old_frame_color.copy(), [np.array(self.clicked_pts_set_one).reshape((-1, 1, 2))],  
                                               isClosed, color,
                                               thickness).copy()
@@ -256,6 +277,33 @@ class SocketPython:
 
                     # update for next iteration
                     self.old_frame_filtered = frame_filtered.copy()
+
+                    # for i in range(len(tracked_contour_one)):
+                    #     x, y = tracked_contour_one[i].ravel()
+                    #     x, y = int(x), int(y)
+                    #     x_old, y_old = points_set_one[i].ravel()
+                    #     x_old, y_old = int(x_old), int(y_old)
+                    #     if abs(int(frame_filtered[x, y]) - int(frame_filtered[x_old, y_old])) <= EPSILON:
+                    #         tracked_contour_one[i][0] = x
+                    #         tracked_contour_one[i][1] = y
+                    #     else:
+                    #         tracked_contour_one[i][0] = x_old
+                    #         tracked_contour_one[i][1] = y_old
+                    #     points_set_one[i] = tracked_contour_one[i]
+
+                    # for i in range(len(tracked_contour_two)):
+                    #     x, y = tracked_contour_two[i].ravel()
+                    #     x, y = int(x), int(y)
+                    #     x_old, y_old = points_set_two[i].ravel()
+                    #     x_old, y_old = int(x_old), int(y_old)
+                    #     if abs(int(frame_filtered[x, y])  - int(frame_filtered[x_old, y_old])) <= EPSILON:
+                    #         tracked_contour_two[i][0] = x
+                    #         tracked_contour_two[i][1] = y
+                    #     else:
+                    #         tracked_contour_two[i][0] = x_old
+                    #         tracked_contour_two[i][1] = y_old
+                    #     points_set_two[i] = tracked_contour_two[i]
+
                     points_set_one = tracked_contour_one.copy()
                     points_set_two = tracked_contour_two.copy()
 
@@ -274,10 +322,6 @@ class SocketPython:
                         cv.circle(frame_color, (int(x), int(y)), 3, (255, 0, 0), -1)
                     mean_two = tuple(np.mean(tracked_contour_two, axis = 0, dtype = np.int))
 
-                    # distance = [mean_two[0] - mean_one[0], mean_two[1] - mean_one[1]]
-                    # vertical_distance = distance[1]
-                    # muscle_thickness = np.linalg.norm(distance)
-
                     #draw line representing thickness
                     cv.line(frame_color, mean_one, mean_two, (255, 0, 255), 3)
                     leftmost_x = min(mean_one[0], mean_two[0])
@@ -293,9 +337,9 @@ class SocketPython:
                     now = time.time()
                     str_now = str(now)
 
-                    #pipe data to graphing program, and save image
-                    # pipe.send((now, muscle_thickness))
-                    pipe.send(vertical_distance)
+                    #send data to graphing program, and save image
+                    with mp_value.get_lock():
+                        mp_value.value = vertical_distance
 
                     if counter == 5:
                         cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_RAW, str_now) + ".jpg", resized)
