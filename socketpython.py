@@ -164,7 +164,7 @@ class SocketPython:
         self.points_set_one = self.original_points_set_one.copy()
         self.points_set_two = self.original_points_set_two.copy()
 
-    def main(self, mp_value):
+    def main(self, pipe):
 
         with open(self.THICKNESS_FILE, "w") as thickness_file:
             thickness_file.write("Muscle thickness data\n")
@@ -333,10 +333,11 @@ class SocketPython:
                     str_now = str(now)
 
                     #send data to graphing program, and save image
-                    with mp_value.get_lock():
-                        mp_value.value = vertical_distance
+                    # with mp_value.get_lock():
+                    #     mp_value.value = vertical_distance
+                    pipe.send(vertical_distance)
 
-                    if counter == 5:
+                    if counter == 10:
                         cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_RAW, str_now) + ".jpg", resized)
                         cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_FILTERED, str_now) + ".jpg", frame_color)
                         with open(self.THICKNESS_FILE, "a") as thickness_file:
