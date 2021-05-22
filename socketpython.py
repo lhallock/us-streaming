@@ -23,11 +23,12 @@ class DrawingState(Enum):
 IP = '172.31.1.153'
 IMAGE_DIRECTORY_RAW = 'images_raw'
 IMAGE_DIRECTORY_FILTERED = 'images_filtered'
-THICKNESS_FILE = 'muscle_thickness_vertical.txt'
+RESET_DISTANCE = 200
 
 class SocketPython:
 
-    def __init__(self):
+    def __init__(self, muscle_thickness_file):
+        self.THICKNESS_FILE = muscle_thickness_file
         #imageMatrix is the recieved image from the ultrasound
         self.imageMatrix = np.zeros((326, 241), dtype = np.uint8)
         #boolean for if ultrasound data has been recieved yet
@@ -125,6 +126,9 @@ class SocketPython:
                 self.clicked_pts_set_two.append((x,y))
                 if(len(self.clicked_pts_set_two) >= 10):
                     self.drawing = DrawingState.DONE_SECOND
+            elif self.drawing == DrawingState.DONE_SECOND:
+                self.reset_points()
+
                 
     def extract_contour_pts(self, img):
         """Extract points from largest contour in PGM image.
@@ -156,9 +160,13 @@ class SocketPython:
 
         return np_points
 
+    def reset_points(self):
+        self.points_set_one = self.original_points_set_one.copy()
+        self.points_set_two = self.original_points_set_two.copy()
+
     def main(self, mp_value):
 
-        with open(THICKNESS_FILE, "w") as thickness_file:
+        with open(self.THICKNESS_FILE, "w") as thickness_file:
             thickness_file.write("Muscle thickness data\n")
         #create opencv window to display image
         cv.namedWindow('image')
@@ -186,8 +194,8 @@ class SocketPython:
         # Line thickness of 8 px 
         thickness = 4
 
-        points_set_one = None
-        points_set_two = None
+        self.points_set_one = None
+        self.points_set_two = None
         counter = 0
 
         EPSILON = 256
@@ -211,38 +219,23 @@ class SocketPython:
 
                     key = cv.waitKey(1)
 
-                elif self.drawing == DrawingState.DONE_SECOND and points_set_one is None and points_set_two is None:
+                elif self.drawing == DrawingState.DONE_SECOND and self.points_set_one is None and self.points_set_two is None:
                     old_frame = resized.copy()
                     old_frame_color = cv2.cvtColor(old_frame,
                                                    cv2.COLOR_GRAY2RGB).copy()
 
-                    # #get box with clicked_pts_set_one and clicked_pts_set_two
-                    # set_one_x_min = min(self.clicked_pts_set_one[0][0], self.clicked_pts_set_one[1][0], self.clicked_pts_set_one[2][0], self.clicked_pts_set_one[3][0])
-                    # set_one_x_max = max(self.clicked_pts_set_one[0][0], self.clicked_pts_set_one[1][0], self.clicked_pts_set_one[2][0], self.clicked_pts_set_one[3][0])
-                    # set_one_y_min = min(self.clicked_pts_set_one[0][1], self.clicked_pts_set_one[1][1], self.clicked_pts_set_one[2][1], self.clicked_pts_set_one[3][1])
-                    # set_one_y_max = max(self.clicked_pts_set_one[0][1], self.clicked_pts_set_one[1][1], self.clicked_pts_set_one[2][1], self.clicked_pts_set_one[3][1])
-
-                    # set_two_x_min = min(self.clicked_pts_set_two[0][0], self.clicked_pts_set_two[1][0], self.clicked_pts_set_two[2][0], self.clicked_pts_set_two[3][0])
-                    # set_two_x_max = max(self.clicked_pts_set_two[0][0], self.clicked_pts_set_two[1][0], self.clicked_pts_set_two[2][0], self.clicked_pts_set_two[3][0])
-                    # set_two_y_min = min(self.clicked_pts_set_two[0][1], self.clicked_pts_set_two[1][1], self.clicked_pts_set_two[2][1], self.clicked_pts_set_two[3][1])
-                    # set_two_y_max = max(self.clicked_pts_set_two[0][1], self.clicked_pts_set_two[1][1], self.clicked_pts_set_two[2][1], self.clicked_pts_set_two[3][1])
-
-                    # mask_one = np.zeros(old_frame.shape, dtype="uint8")
-                    # mask_one[set_one_y_min:set_one_y_max, set_one_x_min: set_one_x_max] = 1
-                    # points_set_one = cv2.goodFeaturesToTrack(old_frame,25,0.01,10, mask=mask_one)
-
-                    # mask_two = np.zeros(old_frame.shape, dtype="uint8")
-                    # mask_two[set_two_y_min:set_two_y_max, set_two_x_min: set_two_x_max] = 1
-                    # points_set_two = cv2.goodFeaturesToTrack(old_frame,25,0.01,10, mask=mask_two)
+                 
                     contour_image = cv2.polylines(old_frame_color.copy(), [np.array(self.clicked_pts_set_one).reshape((-1, 1, 2))],  
                                               isClosed, color,
                                               thickness).copy()
-                    points_set_one = self.extract_contour_pts(contour_image)
+                    self.points_set_one = self.extract_contour_pts(contour_image)
+                    self.original_points_set_one = self.points_set_one.copy()
 
                     contour_image = cv2.polylines(old_frame_color.copy(), [np.array(self.clicked_pts_set_two).reshape((-1, 1, 2))],  
                                               isClosed, color,
                                               thickness).copy()
-                    points_set_two = self.extract_contour_pts(contour_image)
+                    self.points_set_two = self.extract_contour_pts(contour_image)
+                    self.original_points_set_two = self.points_set_two.copy()
 
                 # track and display specified points through images
                 # if it's the first image, we will just set the old_frame varable
@@ -264,11 +257,11 @@ class SocketPython:
 
                     #perform optical flow tracking to track where points went between image frames
                     tracked_contour_one, _, _ = cv.calcOpticalFlowPyrLK(
-                        self.old_frame_filtered, frame_filtered, points_set_one, None,
+                        self.old_frame_filtered, frame_filtered, self.points_set_one, None,
                         **lk_params)
 
                     tracked_contour_two, _, _ = cv.calcOpticalFlowPyrLK(
-                        self.old_frame_filtered, frame_filtered, points_set_two, None,
+                        self.old_frame_filtered, frame_filtered, self.points_set_two, None,
                         **lk_params)
 
                     tracked_contour_one = tracked_contour_one.reshape((-1, 2))
@@ -278,60 +271,62 @@ class SocketPython:
                     # update for next iteration
                     self.old_frame_filtered = frame_filtered.copy()
 
-                    # for i in range(len(tracked_contour_one)):
-                    #     x, y = tracked_contour_one[i].ravel()
-                    #     x, y = int(x), int(y)
-                    #     x_old, y_old = points_set_one[i].ravel()
-                    #     x_old, y_old = int(x_old), int(y_old)
-                    #     if abs(int(frame_filtered[x, y]) - int(frame_filtered[x_old, y_old])) <= EPSILON:
-                    #         tracked_contour_one[i][0] = x
-                    #         tracked_contour_one[i][1] = y
-                    #     else:
-                    #         tracked_contour_one[i][0] = x_old
-                    #         tracked_contour_one[i][1] = y_old
-                    #     points_set_one[i] = tracked_contour_one[i]
-
-                    # for i in range(len(tracked_contour_two)):
-                    #     x, y = tracked_contour_two[i].ravel()
-                    #     x, y = int(x), int(y)
-                    #     x_old, y_old = points_set_two[i].ravel()
-                    #     x_old, y_old = int(x_old), int(y_old)
-                    #     if abs(int(frame_filtered[x, y])  - int(frame_filtered[x_old, y_old])) <= EPSILON:
-                    #         tracked_contour_two[i][0] = x
-                    #         tracked_contour_two[i][1] = y
-                    #     else:
-                    #         tracked_contour_two[i][0] = x_old
-                    #         tracked_contour_two[i][1] = y_old
-                    #     points_set_two[i] = tracked_contour_two[i]
-
-                    points_set_one = tracked_contour_one.copy()
-                    points_set_two = tracked_contour_two.copy()
+                    self.points_set_one = tracked_contour_one.copy()
+                    self.points_set_two = tracked_contour_two.copy()
 
      
                     frame_color = cv2.cvtColor(frame_filtered,
                                                    cv2.COLOR_GRAY2RGB).copy()
+
+                    #check if points have drifted too far apart and reset them if they have
+                    # set_one_convex_hull = cv2.convexHull(self.points_set_one)
+                    # set_two_convex_hull = cv2.convexHull(self.points_set_two)
+                    # set_one_polygon = cv2.approxPolyDP(set_one_convex_hull, 3, True)
+                    # set_two_polygon = cv2.approxPolyDP(set_two_convex_hull, 3, True)
+                    # set_one_area = cv2.contourArea(set_one_polygon)
+                    # set_two_area = cv2.contourArea(set_two_polygon)
+                    
+                    # if set_one_area > RESET_AREA or set_two_area > RESET_AREA:
+                    #     print("set one area: ", set_one_area, flush=True)
+                    #     print("set two area: ", set_two_area, flush=True)
+                    #     print("Resetting points!", flush=True)
+                    #     self.reset_points()
+                    #     continue
+
                     # visualize 
                     # draw the tracked contour
+                    #calculate average distance to center of clusters, and reset if too large
+                    mean_one = tuple(np.mean(tracked_contour_one, axis = 0, dtype=np.int))
+                    mean_two = tuple(np.mean(tracked_contour_two, axis = 0, dtype = np.int))
+
+                    sum_distances_one, sum_distances_two = 0, 0
+
                     for i in range(len(tracked_contour_one)):
                         x, y = tracked_contour_one[i].ravel()
                         cv.circle(frame_color, (int(x), int(y)), 3, (0, 0, 255), -1)
-                    mean_one = tuple(np.mean(tracked_contour_one, axis = 0, dtype=np.int))
+                        sum_distances_one += (x - mean_one[0])**2 + (y - mean_one[1])**2
 
                     for i in range(len(tracked_contour_two)):
                         x, y = tracked_contour_two[i].ravel()
                         cv.circle(frame_color, (int(x), int(y)), 3, (255, 0, 0), -1)
-                    mean_two = tuple(np.mean(tracked_contour_two, axis = 0, dtype = np.int))
+                        sum_distances_two += (x - mean_two[0])**2 + (y - mean_two[1])**2
+
+                    average_distance_set_one = float(sum_distances_one)/len(tracked_contour_one)
+                    average_distance_set_two = float(sum_distances_two)/len(tracked_contour_two)
+                    max_average_distance =  max(average_distance_set_one, average_distance_set_two)
+                    if max_average_distance > RESET_DISTANCE:
+                        self.reset_points()
+                        print("average distance was ", max_average_distance)
+                        print("resetting points!", flush=True)
+                        continue
 
                     #draw line representing thickness
                     cv.line(frame_color, mean_one, mean_two, (255, 0, 255), 3)
-                    leftmost_x = min(mean_one[0], mean_two[0])
-                    rightmost_x = max(mean_one[0], mean_two[0])
+                    middle_x = int((mean_one[0] + mean_two[0])/2)
                     topmost_y = max(mean_one[1], mean_two[1])
                     bottommost_y = min(mean_one[1], mean_two[1])
-                    leftmost_x -= 10
-                    rightmost_x += 10
-                    cv.line(frame_color, (leftmost_x, topmost_y), (rightmost_x, topmost_y), (0, 255, 0), 3)
-                    cv.line(frame_color, (leftmost_x, bottommost_y), (rightmost_x, bottommost_y), (0, 255, 0), 3)
+                    cv.line(frame_color, (middle_x - 10, topmost_y), (middle_x + 10, topmost_y), (0, 255, 0), 3)
+                    cv.line(frame_color, (middle_x - 10, bottommost_y), (middle_x + 10, bottommost_y), (0, 255, 0), 3)
                     vertical_distance = topmost_y - bottommost_y
 
                     now = time.time()
@@ -344,7 +339,7 @@ class SocketPython:
                     if counter == 5:
                         cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_RAW, str_now) + ".jpg", resized)
                         cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_FILTERED, str_now) + ".jpg", frame_color)
-                        with open(THICKNESS_FILE, "a") as thickness_file:
+                        with open(self.THICKNESS_FILE, "a") as thickness_file:
                             thickness_file.write(str_now + ": " + str(vertical_distance) + "\n")
                         counter = 0
                     

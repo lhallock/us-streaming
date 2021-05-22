@@ -35,6 +35,10 @@ def get_filter_from_num(filter_type):
         filter_out = coarse_bilateral_filter
     elif filter_type == 4:
         filter_out = anisotropic_diffuse
+    elif filter_type == 5:
+        filter_out = canny_edge
+    elif filter_type == 6:
+        filter_out = laplacian
     else:
         filter_out = no_filter
     return filter_out
@@ -169,3 +173,13 @@ def canny(gray_image):
     """
     edges = cv2.Canny(gray_image, 180, 200)
     return edges
+
+def canny_edge(img, run_params):
+    return canny(img)
+
+def laplacian(img, run_params):
+    ddepth = cv2.CV_16S
+    kernel_size = 3
+    dst = cv2.Laplacian(img, ddepth, ksize=kernel_size)
+    abs_dst = cv2.convertScaleAbs(dst)
+    return abs_dst
