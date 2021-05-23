@@ -21,14 +21,15 @@ class DrawingState(Enum):
     DONE_SECOND = 5
 
 IP = '172.31.1.153'
-IMAGE_DIRECTORY_RAW = 'images_raw'
-IMAGE_DIRECTORY_FILTERED = 'images_filtered'
+
 RESET_DISTANCE = 200
 
 class SocketPython:
 
-    def __init__(self, muscle_thickness_file):
+    def __init__(self, muscle_thickness_file, image_directory):
         self.THICKNESS_FILE = muscle_thickness_file
+        self.IMAGE_DIRECTORY_RAW = image_directory + "_raw"
+        self.IMAGE_DIRECTORY_FILTERED = image_directory + "_filtered"
         #imageMatrix is the recieved image from the ultrasound
         self.imageMatrix = np.zeros((326, 241), dtype = np.uint8)
         #boolean for if ultrasound data has been recieved yet
@@ -338,8 +339,8 @@ class SocketPython:
                     pipe.send(vertical_distance)
 
                     if counter == 10:
-                        cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_RAW, str_now) + ".jpg", resized)
-                        cv.imwrite(os.path.join(os.getcwd(), IMAGE_DIRECTORY_FILTERED, str_now) + ".jpg", frame_color)
+                        cv.imwrite(os.path.join(os.getcwd(), self.IMAGE_DIRECTORY_RAW, str_now) + ".jpg", resized)
+                        cv.imwrite(os.path.join(os.getcwd(), self.IMAGE_DIRECTORY_FILTERED, str_now) + ".jpg", frame_color)
                         with open(self.THICKNESS_FILE, "a") as thickness_file:
                             thickness_file.write(str_now + ": " + str(vertical_distance) + "\n")
                         counter = 0
