@@ -43,9 +43,10 @@ class SocketPython:
         t1 = threading.Thread(target=self.recieve_data) 
         t1.start()
 
-    """This function recieves the image from the ultrasound machine and writes them to imageMatrix"""
     def recieve_data(self):
-        #TODO: PUT LOCK ON IMAGE MATRIX?
+        """This function recieves the image from the ultrasound machine
+        and writes them to imageMatrix"""
+
         #set up socket to communicate with ultrasound machine
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -101,7 +102,6 @@ class SocketPython:
             nparr = np.frombuffer(buffer, np.uint8)
 
             #fill in imageMatrix based on recieved data
-            # if iteration % 10 == 0:
             for j in range(numberOfLines):
                 for i in range(numberOfPoints):
                     self.imageMatrix[i][j] = nparr[i+ j *(numberOfPoints + 8)]
@@ -113,7 +113,9 @@ class SocketPython:
         conn.close
 
             
-    def draw_polygon(self,event, x, y, flags, param):
+    def collect_clicked_pts(self,event, x, y, flags, param):
+        """ This function stores the first 10 points the user clicks on in clicked_pts_set_one,
+        and the next 10 points in clicked_pts_set_two. """
 
         if event == cv.EVENT_LBUTTONDOWN:
             if self.drawing == DrawingState.STARTING_FIRST or self.drawing == DrawingState.DRAWING_FIRST:
@@ -162,6 +164,8 @@ class SocketPython:
         return np_points
 
     def reset_points(self):
+        """ Resets self.points_set_one and self.points_set_two to the original tracked
+        points """ 
         self.points_set_one = self.original_points_set_one.copy()
         self.points_set_two = self.original_points_set_two.copy()
 
@@ -171,7 +175,7 @@ class SocketPython:
             thickness_file.write("Muscle thickness data\n")
         #create opencv window to display image
         cv.namedWindow('image')
-        cv.setMouseCallback('image',self.draw_polygon)
+        cv.setMouseCallback('image',self.collect_clicked_pts)
 
 
         #set up variables for tracking
@@ -199,7 +203,6 @@ class SocketPython:
         self.points_set_two = None
         counter = 0
 
-        EPSILON = 256
         while 1:
             if self.got_data:
                 #resize imageMatrix so it has a larger width than height
@@ -210,9 +213,6 @@ class SocketPython:
                     old_frame_color = cv2.cvtColor(old_frame,
                                                    cv2.COLOR_GRAY2RGB).copy()
                     # visualize 
-                    
-                    # Using cv2.polylines() method 
-                    # Draw a Green polygon with  
                     contour_image = cv2.polylines(old_frame_color, [np.array(self.clicked_pts_set_one).reshape((-1, 1, 2)), np.array(self.clicked_pts_set_two).reshape((-1, 1, 2))],  
                                           isClosed, color,  
                                           thickness).copy()
@@ -225,7 +225,7 @@ class SocketPython:
                     old_frame_color = cv2.cvtColor(old_frame,
                                                    cv2.COLOR_GRAY2RGB).copy()
 
-                 
+                    #draw two polygons around the two sets of selected points and use extract_contour_pts to get two good sets of points to track
                     contour_image = cv2.polylines(old_frame_color.copy(), [np.array(self.clicked_pts_set_one).reshape((-1, 1, 2))],  
                                               isClosed, color,
                                               thickness).copy()
@@ -278,24 +278,7 @@ class SocketPython:
      
                     frame_color = cv2.cvtColor(frame_filtered,
                                                    cv2.COLOR_GRAY2RGB).copy()
-
-                    #check if points have drifted too far apart and reset them if they have
-                    # set_one_convex_hull = cv2.convexHull(self.points_set_one)
-                    # set_two_convex_hull = cv2.convexHull(self.points_set_two)
-                    # set_one_polygon = cv2.approxPolyDP(set_one_convex_hull, 3, True)
-                    # set_two_polygon = cv2.approxPolyDP(set_two_convex_hull, 3, True)
-                    # set_one_area = cv2.contourArea(set_one_polygon)
-                    # set_two_area = cv2.contourArea(set_two_polygon)
-                    
-                    # if set_one_area > RESET_AREA or set_two_area > RESET_AREA:
-                    #     print("set one area: ", set_one_area, flush=True)
-                    #     print("set two area: ", set_two_area, flush=True)
-                    #     print("Resetting points!", flush=True)
-                    #     self.reset_points()
-                    #     continue
-
-                    # visualize 
-                    # draw the tracked contour
+ 
                     #calculate average distance to center of clusters, and reset if too large
                     mean_one = tuple(np.mean(tracked_contour_one, axis = 0, dtype=np.int))
                     mean_two = tuple(np.mean(tracked_contour_two, axis = 0, dtype = np.int))
@@ -333,9 +316,7 @@ class SocketPython:
                     now = time.time()
                     str_now = str(now)
 
-                    #send data to graphing program, and save image
-                    # with mp_value.get_lock():
-                    #     mp_value.value = vertical_distance
+                    #send data to graphing program, and save every 10'th image
                     pipe.send(vertical_distance)
 
                     if counter == 10:
@@ -352,14 +333,3 @@ class SocketPython:
 
         if viz:
             cv.destroyAllWindows()
-"""This is the main method. It creates a thread to run recieve_data, and 
-then continually loops and displays the recieved image. I am also working on adding LK tracking."""
-# if __name__ == "__main__":
-#     sp = SocketPython()
-#     sp.main(None)
-
-
-        
-
-
-
