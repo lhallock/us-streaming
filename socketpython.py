@@ -168,7 +168,10 @@ class SocketPython:
         self.points_set_two = self.original_points_set_two.copy()
 
     def main(self, pipe):
-
+        """ Allow the user to select two areas to track, then run optical flow
+        tracking on two sets of points on the muscle. Record the vertical muscle thickness
+        as the vertical distance between the means of these two clusters of points.
+        Send the thickness to graphing program, and save every 10'th image. """
         with open(self.THICKNESS_FILE, "w") as thickness_file:
             thickness_file.write("Muscle thickness data\n")
         #create opencv window to display image
