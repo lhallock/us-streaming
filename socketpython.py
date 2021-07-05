@@ -8,9 +8,7 @@ from enum import Enum
 import os
 import time
 
-from multisensorimport.tracking import supporters_utils
 from multisensorimport.tracking.image_proc_utils import *
-from multisensorimport.tracking.point_proc_utils import *
 from multisensorimport.tracking.paramvalues import *
 
 class DrawingState(Enum):
@@ -196,7 +194,7 @@ class SocketPython:
         # Green color in BGR 
         color = (0, 0, 255) 
           
-        # Line thickness of 8 px 
+        # Line thickness of 4 px 
         thickness = 4
 
         self.points_set_one = None
@@ -300,7 +298,7 @@ class SocketPython:
                     max_average_distance =  max(average_distance_set_one, average_distance_set_two)
                     if max_average_distance > RESET_DISTANCE:
                         self.reset_points()
-                        print("average distance was ", max_average_distance)
+                        print("average squared distance was ", max_average_distance)
                         print("resetting points!", flush=True)
                         continue
 
@@ -328,6 +326,7 @@ class SocketPython:
                     
                     cv.imshow('image', frame_color)
 
+                    # wait 1ms 
                     key = cv.waitKey(1)
                     counter += 1
 
