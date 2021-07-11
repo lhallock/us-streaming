@@ -1,30 +1,43 @@
 import socket
 import cv2 as cv
 import numpy as np
-from struct import *
+from struct import unpack, error
 import time
 import threading 
 from enum import Enum
 import os
-import time
 
-from multisensorimport.tracking.image_proc_utils import *
-from multisensorimport.tracking.paramvalues import *
+from multisensorimport.tracking.image_proc_utils import get_filter_from_num
+from multisensorimport.tracking.paramvalues import ParamValues
 
 class DrawingState(Enum):
+    """
+    This class represents whether the user has started selecting points 
+    along the muscle, and which stage of point selection they are at
+    """
     STARTING_FIRST = 0
     DRAWING_FIRST = 1
     STARTING_SECOND = 2
     DRAWING_SECOND = 4
     DONE_SECOND = 5
 
-IP = '172.31.1.153'
 
+IP = 'YOUR_IP_HERE'
 RESET_DISTANCE = 200
 
-class SocketPython:
+class UltrasoundTracker:
 
     def __init__(self, muscle_thickness_file, image_directory):
+        """
+        Init method for UltrasoundTracker. This method starts a thread to
+        recieve images from the ultrasound machine.
+
+        Args:
+            muscle_thickness_file: The filename to write the tracked thickness 
+            values to
+            image_directory: The folder prefix to save the ultrasound images in.
+            Both raw and annotated images are saved.
+        """
         self.THICKNESS_FILE = muscle_thickness_file
         self.IMAGE_DIRECTORY_RAW = image_directory + "_raw"
         self.IMAGE_DIRECTORY_FILTERED = image_directory + "_filtered"
@@ -42,8 +55,10 @@ class SocketPython:
         t1.start()
 
     def recieve_data(self):
-        """This function recieves the image from the ultrasound machine
-        and writes them to imageMatrix"""
+        """
+        This function recieves the image from the ultrasound machine
+        and writes them to imageMatrix
+        """
 
         #set up socket to communicate with ultrasound machine
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -107,13 +122,12 @@ class SocketPython:
             if not data:
                 break
             iteration += 1
-        #close socket connection once we're done
-        conn.close
-
             
-    def collect_clicked_pts(self,event, x, y, flags, param):
-        """ This function stores the first 10 points the user clicks on in clicked_pts_set_one,
-        and the next 10 points in clicked_pts_set_two. """
+    def collect_clicked_pts(self, event, x, y, flags, param):
+        """ 
+        This function stores the first 10 points the user clicks on
+        in clicked_pts_set_one, and the next 10 points in clicked_pts_set_two. 
+        """
 
         if event == cv.EVENT_LBUTTONDOWN:
             if self.drawing == DrawingState.STARTING_FIRST or self.drawing == DrawingState.DRAWING_FIRST:
@@ -121,7 +135,7 @@ class SocketPython:
                 self.clicked_pts_set_one.append((x,y))
                 if(len(self.clicked_pts_set_one) >= 10):
                     self.drawing = DrawingState.STARTING_SECOND
-                    print("START DRAWING SECOND LINE NOW!", flush=True)
+                    print("Start drawing second line now!", flush=True)
             elif self.drawing == DrawingState.STARTING_SECOND or self.drawing == DrawingState.DRAWING_SECOND:
                 self.drawing = DrawingState.DRAWING_SECOND
                 self.clicked_pts_set_two.append((x,y))
@@ -148,8 +162,8 @@ class SocketPython:
         """
         frame_HSV = cv.cvtColor(img, cv.COLOR_BGR2HSV)
         frame_threshold = cv.inRange(frame_HSV, (0, 255, 255), (20, 255, 255))
-        contours, _ = cv2.findContours(frame_threshold, cv2.RETR_TREE,
-                                       cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv.findContours(frame_threshold, cv.RETR_TREE,
+                                       cv.CHAIN_APPROX_SIMPLE)
         # convert largest contour to tracking-compatible numpy array
         points = []
 
@@ -162,16 +176,24 @@ class SocketPython:
         return np_points
 
     def reset_points(self):
-        """ Resets self.points_set_one and self.points_set_two to the original tracked
-        points """ 
+        """ 
+        Resets self.points_set_one and self.points_set_two to the original tracked
+        points 
+        """ 
         self.points_set_one = self.original_points_set_one.copy()
         self.points_set_two = self.original_points_set_two.copy()
 
     def main(self, pipe):
-        """ Allow the user to select two areas to track, then run optical flow
-        tracking on two sets of points on the muscle. Record the vertical muscle thickness
+        """ 
+        This method is started as a thread by start_process.py. It first allows the user 
+        to select two areas to track, then runs optical flow tracking on two sets 
+        of points on the muscle. It records the vertical muscle thickness
         as the vertical distance between the means of these two clusters of points.
-        Send the thickness to graphing program, and save every 10'th image. """
+        It also sends the thickness to the graphing program, and saves every 10'th image. 
+
+        Args:
+            pipe: the pipe that is connected to the graphing program
+        """
         with open(self.THICKNESS_FILE, "w") as thickness_file:
             thickness_file.write("Muscle thickness data\n")
         #create opencv window to display image
@@ -181,19 +203,14 @@ class SocketPython:
 
         #set up variables for tracking
         first_loop = True
-        enter_pressed = False
         run_params = ParamValues()
-        pts = np.array([100, 100]).astype(np.float32).reshape((1, 1, 2))
-        filter_type = 3
         window_size = run_params.LK_window
         lk_params = dict(winSize=(window_size, window_size),
                          maxLevel=run_params.pyr_level,
-                         criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT,
+                         criteria=(cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT,
                                    10, 0.03))
-        image_filter = get_filter_from_num(filter_type)
+        image_filter = get_filter_from_num(3)
 
-        isClosed = False
-      
         # Green color in BGR 
         color = (0, 0, 255) 
           
@@ -211,30 +228,31 @@ class SocketPython:
                     = cv.INTER_AREA).copy()
                 if self.drawing != DrawingState.DONE_SECOND:
                     old_frame = resized.copy()
-                    old_frame_color = cv2.cvtColor(old_frame,
-                                                   cv2.COLOR_GRAY2RGB).copy()
+                    old_frame_color = cv.cvtColor(old_frame,
+                                                   cv.COLOR_GRAY2RGB).copy()
                     # visualize 
-                    contour_image = cv2.polylines(old_frame_color, [np.array(self.clicked_pts_set_one).reshape((-1, 1, 2)), np.array(self.clicked_pts_set_two).reshape((-1, 1, 2))],  
-                                          isClosed, color,  
+                    contour_image = cv.polylines(old_frame_color, 
+                                          [np.array(self.clicked_pts_set_one).reshape((-1, 1, 2)), np.array(self.clicked_pts_set_two).reshape((-1, 1, 2))],  
+                                          False, color,  
                                           thickness).copy()
                     cv.imshow('image', contour_image)
 
-                    key = cv.waitKey(1)
+                    cv.waitKey(1)
 
                 elif self.drawing == DrawingState.DONE_SECOND and self.points_set_one is None and self.points_set_two is None:
                     old_frame = resized.copy()
-                    old_frame_color = cv2.cvtColor(old_frame,
-                                                   cv2.COLOR_GRAY2RGB).copy()
+                    old_frame_color = cv.cvtColor(old_frame,
+                                                   cv.COLOR_GRAY2RGB).copy()
 
                     #draw two polygons around the two sets of selected points and use extract_contour_pts to get two good sets of points to track
-                    contour_image = cv2.polylines(old_frame_color.copy(), [np.array(self.clicked_pts_set_one).reshape((-1, 1, 2))],  
-                                              isClosed, color,
+                    contour_image = cv.polylines(old_frame_color.copy(), [np.array(self.clicked_pts_set_one).reshape((-1, 1, 2))],  
+                                              False, color,
                                               thickness).copy()
                     self.points_set_one = self.extract_contour_pts(contour_image)
                     self.original_points_set_one = self.points_set_one.copy()
 
-                    contour_image = cv2.polylines(old_frame_color.copy(), [np.array(self.clicked_pts_set_two).reshape((-1, 1, 2))],  
-                                              isClosed, color,
+                    contour_image = cv.polylines(old_frame_color.copy(), [np.array(self.clicked_pts_set_two).reshape((-1, 1, 2))],  
+                                              False, color,
                                               thickness).copy()
                     self.points_set_two = self.extract_contour_pts(contour_image)
                     self.original_points_set_two = self.points_set_two.copy()
@@ -250,7 +268,7 @@ class SocketPython:
 
                     first_loop = False
 
-                    key = cv.waitKey(1)
+                    cv.waitKey(1)
 
                 else:
                     # read in new frame
@@ -277,8 +295,8 @@ class SocketPython:
                     self.points_set_two = tracked_contour_two.copy()
 
      
-                    frame_color = cv2.cvtColor(frame_filtered,
-                                                   cv2.COLOR_GRAY2RGB).copy()
+                    frame_color = cv.cvtColor(frame_filtered,
+                                                   cv.COLOR_GRAY2RGB).copy()
  
                     #calculate average distance to center of clusters, and reset if too large
                     mean_one = tuple(np.mean(tracked_contour_one, axis = 0, dtype=np.int))
@@ -330,8 +348,5 @@ class SocketPython:
                     cv.imshow('image', frame_color)
 
                     # wait 1ms 
-                    key = cv.waitKey(1)
+                    cv.waitKey(1)
                     counter += 1
-
-        if viz:
-            cv.destroyAllWindows()
