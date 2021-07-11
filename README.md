@@ -4,7 +4,7 @@ This repo contains code used to
 - collect and visualize ultrasound muscle time series data in real time; and
 - perform real time optical flow tracking of muscle deformation (i.e., contour motion) from time series ultrasound frames.
 
-**NOTE**: This (`tnsre-2021`) branch of this code contains the version of code used for our most recent expiriment. 
+**NOTE**: This (`tnsre-2021`) branch of this code contains the version of code used for our most recent expiriment, and is the version currently under review. 
 
 ## Installation
 
