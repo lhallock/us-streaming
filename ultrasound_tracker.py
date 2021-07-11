@@ -13,7 +13,7 @@ from multisensorimport.tracking.paramvalues import ParamValues
 class DrawingState(Enum):
     """
     This class represents whether the user has started selecting points 
-    along the muscle, and which stage of point selection they are at
+    along the muscle, and which stage of point selection they are at.
     """
     STARTING_FIRST = 0
     DRAWING_FIRST = 1
@@ -57,7 +57,7 @@ class UltrasoundTracker:
     def recieve_data(self):
         """
         This function recieves the image from the ultrasound machine
-        and writes them to imageMatrix
+        and writes the result to imageMatrix
         """
 
         #set up socket to communicate with ultrasound machine
