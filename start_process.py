@@ -10,12 +10,13 @@ if __name__ == '__main__':
 
 	Args:
 		trial_number: 
-			In all trials, Ultrasound, EMG, and Force are recorded and saved,
-			but each trial varies in which ones are displayed on the grapher
+			In all trials except trial 4, Ultrasound, EMG, and Force are recorded and saved,
+			but each of these trials varies in which ones are displayed on the grapher
 			0: Graph Ultrasound, EMG, and Force
 			1: Graph Force
 			2: Graph Ultrasound
 			3: Graph EMG
+			4: Graph Ultrasound (EMG and Force do not need to be set up)
 		ultrasound_muscle_thickness_file: The file to save the tracked ultasound
 		thickness to
 		ultrasound_image_directory: The folder prefix to save the ultrasound images to

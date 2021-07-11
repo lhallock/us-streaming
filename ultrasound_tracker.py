@@ -7,8 +7,8 @@ import threading
 from enum import Enum
 import os
 
-from multisensorimport.tracking.image_proc_utils import get_filter_from_num
-from multisensorimport.tracking.paramvalues import ParamValues
+from tracking_utils.tracking.image_proc_utils import get_filter_from_num
+from tracking_utils.tracking.paramvalues import ParamValues
 
 class DrawingState(Enum):
     """
