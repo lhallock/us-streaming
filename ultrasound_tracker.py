@@ -192,7 +192,7 @@ class UltrasoundTracker:
         It also sends the thickness to the graphing program, and saves every 10'th image. 
 
         Args:
-            pipe: the pipe that is connected to the graphing program
+            pipe: the pipe that sends ultrasound muscle thickness data to the graphing program
         """
         with open(self.THICKNESS_FILE, "w") as thickness_file:
             thickness_file.write("Muscle thickness data\n")
