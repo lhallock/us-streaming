@@ -36,7 +36,7 @@ To run the code, the following Python modules are required, all of which can be 
 
 ---
 
-## Ultrasound muscle thickness tracking and graphing
+## Ultrasound muscle thickness tracking \& graphing
 
 This section describes the file structure and code necessary to run ultrasound tracking. Two main scripts are included: the first, [`start_process.py`](start_process.py), starts the graphing code from the [streaming repository](https://github.com/cmitch/amg_emg_force_control) as a separate process and runs the ultrasound tracking code in its own process; the second, [`ultrasound_tracker.py`](ultrasound_tracker.py), starts one thread that receives ultrasound images from the eZono and another that runs optical flow tracking on two user selected areas of the muscle to determine muscle thickness, then saves these thickness values and the received ultrasound images and sends the thickness values to the graphing process.
 
@@ -90,6 +90,14 @@ python start_process.py 4 thickness.txt images
 11. Control-c out of everything
 
 The images will be saved in us-streaming/images_raw and us-streaming/images_filtered. The thickness will be saved in us-streaming/thickness.txt. The recorded graph will be saved in /data/.
+
+---
+
+## Visualizing \& analyzing generated time series
+
+The procedure above generates JPEG images and corresponding time series text files that are accessible via any standard image viewer and text editor, respectively. The generated Python `*.p` archive files, which contain time series data for all streams and associated metadata, can be accessed via our corresponding [analysis repository](https://github.com/lhallock/openarm-multisensor/tree/tnsre-dev).
+
+---
 
 ## Contributing
 
