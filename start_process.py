@@ -7,11 +7,10 @@ from ultrasound_tracker import UltrasoundTracker
 sys.path.append('../')
 
 if __name__ == '__main__':
-    """  
-	Starts up ultrasound tracking code and grapher, in separate processes. 
+    """Starts up ultrasound tracking code and grapher in separate processes.
 
 	Args:
-		trial_number: 
+		trial_number:
 			In all trials except trial 4, Ultrasound, EMG, and Force are recorded and saved,
 			but each of these trials varies in which ones are displayed on the grapher
 			0: Graph Ultrasound, EMG, and Force
@@ -22,8 +21,7 @@ if __name__ == '__main__':
 		ultrasound_muscle_thickness_file: The file to save the tracked ultasound
 		thickness to
 		ultrasound_image_directory: The folder prefix to save the ultrasound images to
-	 """
-
+    """
     trial_number = sys.argv[1]
     ultrasound_muscle_thickness_file = sys.argv[2]
     ultrasound_image_directory = sys.argv[3]

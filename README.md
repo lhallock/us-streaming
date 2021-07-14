@@ -1,10 +1,15 @@
-# Toward  Real-Time  Muscle  Force  Inference  and  Device  Control  via Optical-Flow-Tracked  Muscle  Deformation
+# Tracking Muscle Deformation via Optical Flow in Time Series Ultrasound Images
 
 This repo contains code used to 
-- collect and visualize ultrasound muscle time series data in real time; and
-- perform real time optical flow tracking of muscle deformation (i.e., contour motion) from time series ultrasound frames.
+- perform real time optical flow tracking of muscle deformation (i.e., contour motion) from time series ultrasound frames; and
+- record and visualize this data.
 
-**NOTE**: This (`tnsre-2021`) branch of this code contains the version of code used for our most recent expiriment, and is the version currently under review. 
+**If you use this code for academic purposes, please cite the following publication**: Laura A. Hallock, Bhavna Sud, Chris Mitchell, Eric Hu, Fayyaz Ahamed, Akash Velu, Amanda Schwartz, and Ruzena Bajcsy, "[Toward Real-Time Muscle Force Inference and Device Control via Optical-Flow-Tracked Muscle Deformation](https://people.eecs.berkeley.edu/~lhallock/publication/hallock2021tnsre/)," in _IEEE Transactions on Neural Systems and Rehabilitation Engineering (TNSRE)_, IEEE, 2021. (under review)
+
+**NOTE**: This code branch has been updated in preparation for the paper submission above, currently under review. To access the latest stable code release, visit the `master` branch [here](https://github.com/lhallock/us-streaming/).
+
+This README primarily describes the methods needed to replicate the data collection procedure used in the publication above. The code and documentation are provided as-is; however, we invite anyone who wishes to adapt and use it under a [Creative Commons Attribution 4.0 International
+License](https://creativecommons.org/licenses/by/4.0/).
 
 ## Installation
 
