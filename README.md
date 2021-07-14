@@ -8,8 +8,7 @@ This repo contains code used to
 
 **NOTE**: This code branch has been updated in preparation for the paper submission above, currently under review. To access the latest stable code release, visit the `master` branch [here](https://github.com/lhallock/us-streaming/).
 
-This README primarily describes the methods needed to replicate the data collection procedure used in the publication above. The code and documentation are provided as-is; however, we invite anyone who wishes to adapt and use it under a [Creative Commons Attribution 4.0 International
-License](https://creativecommons.org/licenses/by/4.0/).
+This README primarily describes the methods needed to replicate the data collection procedure used in the publication above. The code and documentation are provided as-is; however, we invite anyone who wishes to adapt and use it under a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
 
 ## Installation
 
@@ -21,16 +20,19 @@ To download all modules and scripts, clone this repository via
 git clone https://github.com/lhallock/us-streaming.git
 ```
 
+and navigate to this branch via
+
+```bash
+git checkout tnsre-2021
+```
+
 ### Dependencies
 
-In order to run this code, you will need access to an Ezono Ultrasound machine (https://www.ezono.com/en/ezono-5000/) that you can ssh into.
+This code is designed for use with an [eZono 4000](https://www.ezono.com/en/) ultrasound machine with SSH access, though it can likely be adapted to other platforms.
 
-Our expiriment was also run with EMG and Force sensors, which you can set up according to https://github.com/cmitch/amg_emg_force_control.
+This code is designed for use alongside our time series visualization and recording code, which can be found [here](https://github.com/cmitch/amg_emg_force_control) and enables simultaneous collection of ultrasound, surface electromyography (sEMG), force, and other data. Both repositories must be downloaded into the same directory for this code to run without modification.
 
-To run the code, the following Python modules are required, all of which can be installed via `pip`: 
-`numpy`, `opencv-python`, `future`, `iso8601`, `numpy`, `PyQt5`, `PyQt5-sip`, `pyqtgraph`, `pyserial`, `PyYAML`, and `serial`
-
-It is also required that the following repository: https://github.com/cmitch/amg_emg_force_control is installed in the same directory as this repository.
+To run the code, the following Python modules are required, all of which can be installed via `pip`: `numpy`, `opencv-python`, `future`, `iso8601`, `PyQt5`, `PyQt5-sip`, `pyqtgraph`, `pyserial`, `PyYAML`, and `serial`.
 
 ---
 
