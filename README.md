@@ -1,5 +1,7 @@
 # Tracking Muscle Deformation via Optical Flow in Time Series Ultrasound Images
 
+![us-streaming tracking exemplar](header.gif)
+
 This repo contains code used to 
 - perform real time optical flow tracking of muscle deformation (i.e., contour motion) from time series ultrasound frames; and
 - record and visualize this data.
