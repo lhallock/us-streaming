@@ -30,7 +30,7 @@ git checkout tnsre-2021
 
 This code is designed for use with an [eZono 4000](https://www.ezono.com/en/) ultrasound machine with SSH access, though it can likely be adapted to other platforms.
 
-This code is designed for use alongside our time series visualization and recording code, which can be found [here](https://github.com/cmitch/amg_emg_force_control) and enables simultaneous collection of ultrasound, surface electromyography (sEMG), force, and other data. Both repositories must be downloaded into the same directory for this code to run without modification.
+This code is designed for use alongside our time series visualization and recording code, which can be found [here](https://github.com/cmitch/amg_emg_force_control) and enables simultaneous collection of ultrasound, surface electromyography (sEMG), force, and other data. **Both repositories must be downloaded into the same directory for this code to run without modification.**
 
 To run the code, the following Python modules are required, all of which can be installed via `pip`: `numpy`, `opencv-python`, `future`, `iso8601`, `PyQt5`, `PyQt5-sip`, `pyqtgraph`, `pyserial`, `PyYAML`, and `serial`.
 
@@ -38,21 +38,22 @@ To run the code, the following Python modules are required, all of which can be 
 
 ## Ultrasound muscle thickness tracking and graphing
 
-This section describes the file structure and code necessary to run ultrasound tracking. Two main scripts are included: the first, [`start_process.py`](start_process.py), starts the graphing code from https://github.com/cmitch/amg_emg_force_control as a separate process, and runs the ultrasound tracking code in its own process; the second, [`ultrasound_tracker.py`](ultrasound_tracker.py), starts one thread that recieves ultrasound images from the eZono, and another thread that runs optical flow tracking on two user selected areas of the muscle to determine muscle thickness, saves these thickness values and the recieved ultrasound images, and sends the thickness values to the graphing process.
+This section describes the file structure and code necessary to run ultrasound tracking. Two main scripts are included: the first, [`start_process.py`](start_process.py), starts the graphing code from https://github.com/cmitch/amg_emg_force_control as a separate process and runs the ultrasound tracking code in its own process; the second, [`ultrasound_tracker.py`](ultrasound_tracker.py), starts one thread that receives ultrasound images from the eZono, and another thread that runs optical flow tracking on two user selected areas of the muscle to determine muscle thickness, then saves these thickness values and the received ultrasound images and sends the thickness values to the graphing process.
 
 ### Setup
 
-The us-streaming and amg_emg_force_control repositories should be arranged as follows.
+The us-streaming and amg_emg_force_control repositories should be arranged as follows, with empty files and folders manually created as listed:
+
 ```bash
-├── amg_emg_force_control
-├── us-streaming
-│   ├── images_filtered (empty folder)   
-│   ├── images_raw (empty folder)
-│   ├── thickness.txt (empty file)
+├── amg_emg_force_control # visualization/recording repository linked above
+├── us-streaming # this repository
+│   ├── images_filtered # empty folder
+│   ├── images_raw # empty folder
+│   ├── thickness.txt # empty file
 │   ├── ...
 ```
 
-You can rename images_filtered, images_raw, and thickness.txt to anything you want, but be sure to change these names in the commands below.
+Note that the names `images_filtered`, `images_raw`, and `thickness.txt` are arbitrary and can be modified, as long as they're also changed in the commands below.
 
 ### Usage
 
