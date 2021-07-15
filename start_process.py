@@ -1,3 +1,27 @@
+"""Script to run ultrasound tracking code and tracker.
+
+Example:
+    Run this function via
+
+        $ python start_process.py <trial_num> <thickness_file> <images_folders_prefix>
+
+    for
+        trial_num: integer value corresponding to desired plotting/recording
+            0: records and plots ultrasound-measured thickness, sEMG-measured
+                activation, and force trajectories
+            1: records thickness, activation, and force, but plots only force
+            2: records thickness, activation, and force, but plots only
+                thickness
+            3: records thickness, activation, and force, but plots only
+                activation
+            4: records and plots only ultrasound-measured thickness (sEMG and
+            force sensors need not be set up)
+        thickness_file: file to which time series thickness values should be
+            saved (e.g., 'thickness.txt')
+        images_folders_prefix: prefix of folder names to which to save
+            processed and unprocessed images (e.g., 'images' for preexisting
+            folders 'images_filtered' and 'images_raw')
+"""
 import multiprocessing as mp
 import sys
 
@@ -7,21 +31,7 @@ from ultrasound_tracker import UltrasoundTracker
 sys.path.append('../')
 
 if __name__ == '__main__':
-    """Starts up ultrasound tracking code and grapher in separate processes.
-
-	Args:
-		trial_number:
-			In all trials except trial 4, Ultrasound, EMG, and Force are recorded and saved,
-			but each of these trials varies in which ones are displayed on the grapher
-			0: Graph Ultrasound, EMG, and Force
-			1: Graph Force
-			2: Graph Ultrasound
-			3: Graph EMG
-			4: Graph Ultrasound (EMG and Force do not need to be set up)
-		ultrasound_muscle_thickness_file: The file to save the tracked ultasound
-		thickness to
-		ultrasound_image_directory: The folder prefix to save the ultrasound images to
-    """
+    """Starts up ultrasound tracking code and grapher in separate processes."""
     trial_number = sys.argv[1]
     ultrasound_muscle_thickness_file = sys.argv[2]
     ultrasound_image_directory = sys.argv[3]
