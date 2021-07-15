@@ -13,9 +13,11 @@ from tracking_utils.tracking.paramvalues import ParamValues
 
 
 class DrawingState(Enum):
-    """
-    This class represents whether the user has started selecting points 
-    along the muscle, and which stage of point selection they are at.
+    """Enum describing system status during point selection.
+
+    This class represents the current status of the tracking system, i.e.,
+    whether the user has started/completed point selection for the first and
+    second cluster.
     """
     STARTING_FIRST = 0
     DRAWING_FIRST = 1
@@ -33,7 +35,7 @@ class UltrasoundTracker:
     def __init__(self, muscle_thickness_file, image_directory):
         """
         Init method for UltrasoundTracker. This method starts a thread to
-        recieve images from the ultrasound machine.
+        receive images from the ultrasound machine.
 
         Args:
             muscle_thickness_file: The filename to write the tracked thickness 
@@ -44,22 +46,22 @@ class UltrasoundTracker:
         self.THICKNESS_FILE = muscle_thickness_file
         self.IMAGE_DIRECTORY_RAW = image_directory + "_raw"
         self.IMAGE_DIRECTORY_FILTERED = image_directory + "_filtered"
-        #imageMatrix is the recieved image from the ultrasound
+        #imageMatrix is the received image from the ultrasound
         self.imageMatrix = np.zeros((326, 241), dtype=np.uint8)
-        #boolean for if ultrasound data has been recieved yet
+        #boolean for if ultrasound data has been received yet
         self.got_data = False
 
         self.drawing = DrawingState.STARTING_FIRST
         self.old_frame_filtered = np.zeros((244, 301), np.uint8)
         self.clicked_pts_set_one = []
         self.clicked_pts_set_two = []
-        #create a thread to run recieve_data and start it
-        t1 = threading.Thread(target=self.recieve_data)
+        #create a thread to run receive_data and start it
+        t1 = threading.Thread(target=self.receive_data)
         t1.start()
 
-    def recieve_data(self):
+    def receive_data(self):
         """
-        This function recieves the image from the ultrasound machine
+        This function receives the image from the ultrasound machine
         and writes the result to imageMatrix
         """
 
@@ -73,20 +75,20 @@ class UltrasoundTracker:
 
         #first iteration to set imageMatrix size
         iteration = 0
-        recieved = 0
-        while (recieved != 100):
-            data = conn.recv(100 - recieved)
-            recieved += len(data)
+        received = 0
+        while (received != 100):
+            data = conn.recv(100 - received)
+            received += len(data)
         header = unpack('IIIIIIIIIQIIIIIIIIIIIII', data)
         numberOfLines = header[13]
         numberOfPoints = header[14]
         self.imageMatrix = np.zeros((numberOfPoints, numberOfLines),
                                     dtype=np.uint8)
-        recieved = 0
+        received = 0
         buffer = b''
-        while (recieved != header[8]):
-            buffer += conn.recv(header[8] - recieved)
-            recieved = len(buffer)
+        while (received != header[8]):
+            buffer += conn.recv(header[8] - received)
+            received = len(buffer)
         nparr = np.frombuffer(buffer, np.uint8)
         for j in range(numberOfLines):
             for i in range(numberOfPoints):
@@ -96,33 +98,33 @@ class UltrasoundTracker:
 
         #rest of iterations
         while 1:
-            #recieve header data
-            recieved = 0
-            while (recieved != 100):
-                data = conn.recv(100 - recieved)
-                recieved += len(data)
+            #receive header data
+            received = 0
+            while (received != 100):
+                data = conn.recv(100 - received)
+                received += len(data)
             #unpack header data so we can access it
             try:
                 header = unpack('IIIIIIIIIQIIIIIIIIIIIII', data)
             except error:
                 print("unpack error")
-            #recieved image size will be numberOfLines * numberOfPoints
+            #received image size will be numberOfLines * numberOfPoints
             numberOfLines = header[13]
             numberOfPoints = header[14]
 
-            #recieve image data
-            recieved = 0
+            #receive image data
+            received = 0
             buffer = b''
-            while (recieved != header[8]):
-                buffer += conn.recv(header[8] - recieved)
-                recieved = len(buffer)
+            while (received != header[8]):
+                buffer += conn.recv(header[8] - received)
+                received = len(buffer)
             nparr = np.frombuffer(buffer, np.uint8)
 
-            #fill in imageMatrix based on recieved data
+            #fill in imageMatrix based on received data
             for j in range(numberOfLines):
                 for i in range(numberOfPoints):
                     self.imageMatrix[i][j] = nparr[i + j * (numberOfPoints + 8)]
-            #if we have not recieved an image, break
+            #if we have not received an image, break
             if not data:
                 break
             iteration += 1
