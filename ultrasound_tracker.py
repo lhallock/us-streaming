@@ -1,3 +1,11 @@
+""" Functions to receive ultrasound frames and track muscle thickness
+
+This file contains the code to receive data from the ultrasound machine,
+and display the received images. It also contains the tracking code that allows the user
+to select areas of the muscle to track, and performs optical flow tracking to determine
+muscle thickness.
+"""
+
 import os
 import socket
 import threading
@@ -11,6 +19,12 @@ import numpy as np
 from tracking_utils.tracking.image_proc_utils import get_filter_from_num
 from tracking_utils.tracking.paramvalues import ParamValues
 
+# IP that the ultrasound machine will send data to, replace with your computer's IP address
+IP = 'YOUR_IP_HERE'
+
+# If average squared distance (in pixels) of tracked points from their cluster center
+# exceeds RESET_DISTANCE, we reset all tracked points to their original locations
+RESET_DISTANCE = 200
 
 class DrawingState(Enum):
     """Enum describing system status during point selection.
@@ -25,12 +39,9 @@ class DrawingState(Enum):
     DRAWING_SECOND = 4
     DONE_SECOND = 5
 
-
-IP = 'YOUR_IP_HERE'
-RESET_DISTANCE = 200
-
-
 class UltrasoundTracker:
+    """ Class containing functions to receive ultrasound frames, and perform optical
+    flow tracking to determine muscle thickness """
 
     def __init__(self, muscle_thickness_file, image_directory):
         """
@@ -74,7 +85,6 @@ class UltrasoundTracker:
         print(addr)
 
         #first iteration to set imageMatrix size
-        iteration = 0
         received = 0
         while (received != 100):
             data = conn.recv(100 - received)
@@ -93,7 +103,6 @@ class UltrasoundTracker:
         for j in range(numberOfLines):
             for i in range(numberOfPoints):
                 self.imageMatrix[i][j] = nparr[i + j * (numberOfPoints + 8)]
-        iteration += 1
         self.got_data = True
 
         #rest of iterations
@@ -127,12 +136,18 @@ class UltrasoundTracker:
             #if we have not received an image, break
             if not data:
                 break
-            iteration += 1
 
     def collect_clicked_pts(self, event, x, y, flags, param):
         """ 
         This function stores the first 10 points the user clicks on
         in clicked_pts_set_one, and the next 10 points in clicked_pts_set_two. 
+
+        Args:
+            event: OpenCV event type representing what user action was taken
+            x (int): x location of event
+            y (int): y location of event
+            flags: unused
+            param: unused
         """
 
         if event == cv.EVENT_LBUTTONDOWN:
