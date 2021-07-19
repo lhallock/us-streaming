@@ -64,8 +64,8 @@ For just ultrasound, you can run Trial 4.
 
 Steps:
 1. With terminal or git bash, go to the amg_emg_force_control folder, and type amg && amg_env
-3. Go to the ../us-streaming folder
-4. Inside us-streaming, create two folders called images_raw and images_filtered
+2. Go to the ../us-streaming folder
+3. Inside us-streaming, create two folders called images_raw and images_filtered
 4. In terminal, go to us-streaming and type 
 ```bash
 python start_process.py <trial_num> <thickness_file> <images_folders_prefix>
