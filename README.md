@@ -57,16 +57,22 @@ The `us-streaming` and `amg_emg_force_control` repositories should be arranged a
 
 Note that the names `images_filtered`, `images_raw`, and `thickness.txt` are arbitrary and can be modified, as long as they're also changed in the commands below.
 
+Next, setup a python virtual environment in a new directory by running 
+```bash
+python -m venv DIR_NAME
+```
+then navigate to the amg_emg_force_control repo and run
+```bash
+pip install -r requirements.txt
+pip install -e .
+```
+
 ### Usage
 
-To run Trials 0-3, set up EMG/Force sensors as described in https://github.com/cmitch/amg_emg_force_control. 
-For just ultrasound, you can run Trial 4. 
-
 Steps:
-1. With terminal or git bash, go to the amg_emg_force_control folder, and type amg && amg_env
-2. Go to the ../us-streaming folder
-3. Inside us-streaming, create two folders called images_raw and images_filtered
-4. In terminal, go to us-streaming and type 
+1. Go to the us-streaming folder
+2. Inside us-streaming, create two folders called images_raw and images_filtered
+3. In terminal, go to us-streaming and type 
 ```bash
 python start_process.py <trial_num> <thickness_file> <images_folders_prefix>
 ```
@@ -83,13 +89,13 @@ specifying the above command line arguments as follows:
 For trial 4, you can run:
 python start_process.py 4 thickness.txt images
 
-5. Ssh into the ultrasound and type b-mode-compounded-data-out <YOUR_COMPUTER_IP> 19001, replacing <YOUR_COMPUTER_IP> with the IP address of the computer you are running this code on.
-6. On the displayed image, select 10 dots on the top of the muscle and 10 dots on the bottom
-7. Enter in a filename you want to save the recording to. Wait until the green line in the graph reaches the end, then press record.
-8. Min and max calibrate
-9. Click start trajectory 0, and run the trial
-10. Click stop recording
-11. Control-c out of everything
+4. Ssh into the ultrasound and type b-mode-compounded-data-out <YOUR_COMPUTER_IP> 19001, replacing <YOUR_COMPUTER_IP> with the IP address of the computer you are running this code on.
+5. On the displayed image, select 10 dots on the top of the muscle and 10 dots on the bottom
+6. Enter in a filename you want to save the recording to. Wait until the green line in the graph reaches the end, then press record.
+7. Min and max calibrate
+8. Click start trajectory 0, and run the trial
+9. Click stop recording
+10. Control-c out of everything
 
 The images will be saved in us-streaming/images_raw and us-streaming/images_filtered. The thickness will be saved in us-streaming/thickness.txt. The recorded graph will be saved in /data/.
 
